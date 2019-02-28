@@ -35,7 +35,12 @@ export default {
   'menu.account.settings': '个人设置',
   'menu.account.trigger': '触发报错',
   'menu.account.logout': '退出登录',
+  
   'menu.layoutManagement': '版面管理',
   'menu.layoutManagement.contentManagement': '内容管理',
   'menu.layoutManagement.productManagement': '产品管理',
+  'menu.layoutManagement.columnManagement':'栏目管理',
+  'menu.layoutManagement.columnContentRelation':'栏目内容关系管理',
+  'menu.config':'配置管理',
+  'menu.config.FTP':'FTP配置',
 };

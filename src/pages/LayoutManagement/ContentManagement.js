@@ -1,6 +1,7 @@
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'dva';
 import moment from 'moment';
+import Zmage from 'react-zmage';
 import {
   Row,
   Col,
@@ -20,14 +21,13 @@ import {
   Divider,
   Steps,
   Radio,
-  List,
-  Avatar,
+  Table,
+  Upload,
 } from 'antd';
-import StandardTable from '@/components/StandardTable';
-import PicturesWall from '@/components/Self/PicturesWall';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 import styles from './ContentManagement.less';
+import UploadPictures from '@/components/Self/UploadPictures';
 
 const FormItem = Form.Item;
 const { Step } = Steps;
@@ -38,67 +38,146 @@ const getValue = obj =>
   Object.keys(obj)
     .map(key => obj[key])
     .join(',');
-const statusMap = ['default', 'processing', 'success', 'error'];
-const status = ['关闭', '运行中', '已上线', '异常'];
 
 const CreateForm = Form.create()(props => {
-  const { modalVisible, form, handleAdd, handleModalVisible } = props;
+  const { modalVisible, form, handleSubmit, handleModalVisible, onTypeChange, onPosterChange, onIconChange, onScreenshotChange, current, productList } = props;
   const okHandle = () => {
     form.validateFields((err, fieldsValue) => {
       if (err) return;
       form.resetFields();
-      handleAdd(fieldsValue); //todo:后台新增内容接口
+
+      if(!fieldsValue.contentId){
+        fieldsValue.contentId = (new Date().getTime().toString()).slice(0,9);//mysql int max num is 2147483647!!
+      }
+      handleSubmit({
+        ...fieldsValue,
+        posterFile: current.posterFile && current.posterFile.length > 0 ? current.posterFile[0].originFileObj : '',//入参需是js File对象 antd pro 包了一层 其中的originFileObj是所需对象
+        iconFile: current.iconFile && current.iconFile.length > 0 ? current.iconFile[0].originFileObj : '',
+        screenShotFile: current.screenShotFile && current.screenShotFile.length > 0 ? current.screenShotFile[0].originFileObj : '',
+      });
     });
   };
+
   return (
     <Modal
       destroyOnClose
-      title="新增内容"
+      title={`${current.id ? '编辑' : '新建'}内容`}
       visible={modalVisible}
       onOk={okHandle}
-      width={900}
       onCancel={() => handleModalVisible()}
+      width={'80%'}
     >
-      <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
-        <Col md={12} sm={24}>
-          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="名称">
-            <Input placeholder="请输入" />
+      <Row>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="所属产品" required>
+            {form.getFieldDecorator('productId', {
+              rules: [{ required: true, message: '请选择所属产品!' }],
+              initialValue: current.productId ? current.productId : '',
+            })(
+              <Select style={{ width: '100%' }} disabled={current.productId ? true : false}>
+                {productList.map(tmpObj => (<Option key={tmpObj.id} value={tmpObj.id}>{tmpObj.id + ' | ' + (tmpObj.name ? tmpObj.name : '')}</Option>))}
+              </Select>
+            )
+            }
           </FormItem>
         </Col>
-        <Col md={12} sm={24}>
-          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="类型">
-            <Input placeholder="请输入" />
-          </FormItem>
-        </Col>
-      </Row>
-      <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
-        <Col md={12} sm={24}>
-          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="连接">
-            <Input placeholder="请输入" />
-          </FormItem>
-        </Col>
-        <Col md={12} sm={24}>
-          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="提示">
-            <Input placeholder="请输入" />
-          </FormItem>
-        </Col>
-      </Row>
-      <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
-        <Col md={12} sm={24}>
-          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="小图标">
-            <PicturesWall maxPicNum={1} />
-          </FormItem>
-        </Col>
-        <Col md={12} sm={24}>
-          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="海报图">
-            <PicturesWall />
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="内容ID">
+            {form.getFieldDecorator('contentId', {
+              rules: [
+                {
+                  required: false,
+                  message: '内容ID为长度不大于9位的数字！',
+                  max: 9,
+                  pattern: '^[0-9]*$',
+                },
+              ],
+              initialValue: current.contentId ? current.contentId + '' : '', //初始化值必须为string！！！
+            })(<Input disabled={current.contentId ? true : false} placeholder="请输入" />)}
           </FormItem>
         </Col>
       </Row>
-      <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
-        <Col md={12} sm={24}>
+      <Row>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="内容名称">
+            {form.getFieldDecorator('name', {
+              rules: [{ required: false, message: '内容名称长度不大于45！', max: 45 }],
+              initialValue: current.name,
+            })(<Input placeholder="请输入" />)}
+          </FormItem>
+        </Col>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="内容类型">
+            {form.getFieldDecorator('type', {
+              initialValue: current.type,
+            })(
+              <RadioGroup onChange={onTypeChange} value={current.type}>
+                <Radio value={1}>游戏</Radio>
+                <Radio value={2}>视频</Radio>
+                <Radio value={0}>其他</Radio>
+              </RadioGroup>
+            )}
+
+          </FormItem>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="内容链接">
+            {form.getFieldDecorator('link', {
+              rules: [{ required: false, message: '内容链接长度不大于255！', max: 255 }],
+              initialValue: current.link,
+            })(<Input placeholder="请输入" />)}
+          </FormItem>
+        </Col>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="内容提示">
+            {form.getFieldDecorator('tip', {
+              rules: [{ required: false, message: '内容提示长度不大于255！', max: 255 }],
+              initialValue: current.tip,
+            })(<Input placeholder="请输入" />)}
+          </FormItem>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="内容海报">
+            {form.getFieldDecorator('poster', {})(
+              <UploadPictures
+                fileList={current.poster ? [{ url: current.poster, uid: -3 }] : []}
+                onPictureChange={onPosterChange}
+                maxPicNum={1} />)}
+          </FormItem>
+        </Col>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="内容图标">
+            {form.getFieldDecorator('icon', {})(
+              <UploadPictures
+                fileList={current.icon ? [{ url: current.icon, uid: -1 }] : []}
+                onPictureChange={onIconChange}
+                maxPicNum={1} />)}
+          </FormItem>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col span={12}>
           <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="内容截图">
-            <PicturesWall />
+            {form.getFieldDecorator('screenShot', {})(
+              <UploadPictures
+                fileList={current.screenShot ? [{ url: current.screenShot, uid: -2 }] : []}
+                onPictureChange={onScreenshotChange}
+                maxPicNum={1} />)}
+          </FormItem>
+        </Col>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="内容配置">
+            {form.getFieldDecorator('options', {
+              rules: [{ required: false, message: '内容配置长度不大于255！', max: 255 }],
+              initialValue: current.options,
+            })(<TextArea rows={4} placeholder="请输入" />)}
           </FormItem>
         </Col>
       </Row>
@@ -106,321 +185,145 @@ const CreateForm = Form.create()(props => {
   );
 });
 
-@Form.create()
-class UpdateForm extends PureComponent {
-  static defaultProps = {
-    handleUpdate: () => {},
-    handleUpdateModalVisible: () => {},
-    values: {},
-  };
-
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      formVals: {
-        name: props.values.name,
-        desc: props.values.desc,
-        key: props.values.key,
-        target: '0',
-        template: '0',
-        type: '1',
-        time: '',
-        frequency: 'month',
-      },
-      currentStep: 0,
-    };
-
-    this.formLayout = {
-      labelCol: { span: 7 },
-      wrapperCol: { span: 13 },
-    };
-  }
-
-  handleNext = currentStep => {
-    const { form, handleUpdate } = this.props;
-    const { formVals: oldValue } = this.state;
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      const formVals = { ...oldValue, ...fieldsValue };
-      this.setState(
-        {
-          formVals,
-        },
-        () => {
-          if (currentStep < 2) {
-            this.forward();
-          } else {
-            handleUpdate(formVals);
-          }
-        }
-      );
-    });
-  };
-
-  backward = () => {
-    const { currentStep } = this.state;
-    this.setState({
-      currentStep: currentStep - 1,
-    });
-  };
-
-  forward = () => {
-    const { currentStep } = this.state;
-    this.setState({
-      currentStep: currentStep + 1,
-    });
-  };
-
-  renderContent = (currentStep, formVals) => {
-    const { form } = this.props;
-    if (currentStep === 1) {
-      return [
-        <FormItem key="target" {...this.formLayout} label="监控对象">
-          {form.getFieldDecorator('target', {
-            initialValue: formVals.target,
-          })(
-            <Select style={{ width: '100%' }}>
-              <Option value="0">表一</Option>
-              <Option value="1">表二</Option>
-            </Select>
-          )}
-        </FormItem>,
-        <FormItem key="template" {...this.formLayout} label="规则模板">
-          {form.getFieldDecorator('template', {
-            initialValue: formVals.template,
-          })(
-            <Select style={{ width: '100%' }}>
-              <Option value="0">规则模板一</Option>
-              <Option value="1">规则模板二</Option>
-            </Select>
-          )}
-        </FormItem>,
-        <FormItem key="type" {...this.formLayout} label="规则类型">
-          {form.getFieldDecorator('type', {
-            initialValue: formVals.type,
-          })(
-            <RadioGroup>
-              <Radio value="0">强</Radio>
-              <Radio value="1">弱</Radio>
-            </RadioGroup>
-          )}
-        </FormItem>,
-      ];
-    }
-    if (currentStep === 2) {
-      return [
-        <FormItem key="time" {...this.formLayout} label="开始时间">
-          {form.getFieldDecorator('time', {
-            rules: [{ required: true, message: '请选择开始时间！' }],
-          })(
-            <DatePicker
-              style={{ width: '100%' }}
-              showTime
-              format="YYYY-MM-DD HH:mm:ss"
-              placeholder="选择开始时间"
-            />
-          )}
-        </FormItem>,
-        <FormItem key="frequency" {...this.formLayout} label="调度周期">
-          {form.getFieldDecorator('frequency', {
-            initialValue: formVals.frequency,
-          })(
-            <Select style={{ width: '100%' }}>
-              <Option value="month">月</Option>
-              <Option value="week">周</Option>
-            </Select>
-          )}
-        </FormItem>,
-      ];
-    }
-    return [
-      <FormItem key="name" {...this.formLayout} label="规则名称">
-        {form.getFieldDecorator('name', {
-          rules: [{ required: true, message: '请输入规则名称！' }],
-          initialValue: formVals.name,
-        })(<Input placeholder="请输入" />)}
-      </FormItem>,
-      <FormItem key="desc" {...this.formLayout} label="规则描述">
-        {form.getFieldDecorator('desc', {
-          rules: [{ required: true, message: '请输入至少五个字符的规则描述！', min: 5 }],
-          initialValue: formVals.desc,
-        })(<TextArea rows={4} placeholder="请输入至少五个字符" />)}
-      </FormItem>,
-    ];
-  };
-
-  renderFooter = currentStep => {
-    const { handleUpdateModalVisible, values } = this.props;
-    if (currentStep === 1) {
-      return [
-        <Button key="back" style={{ float: 'left' }} onClick={this.backward}>
-          上一步
-        </Button>,
-        <Button key="cancel" onClick={() => handleUpdateModalVisible(false, values)}>
-          取消
-        </Button>,
-        <Button key="forward" type="primary" onClick={() => this.handleNext(currentStep)}>
-          下一步
-        </Button>,
-      ];
-    }
-    if (currentStep === 2) {
-      return [
-        <Button key="back" style={{ float: 'left' }} onClick={this.backward}>
-          上一步
-        </Button>,
-        <Button key="cancel" onClick={() => handleUpdateModalVisible(false, values)}>
-          取消
-        </Button>,
-        <Button key="submit" type="primary" onClick={() => this.handleNext(currentStep)}>
-          完成
-        </Button>,
-      ];
-    }
-    return [
-      <Button key="cancel" onClick={() => handleUpdateModalVisible(false, values)}>
-        取消
-      </Button>,
-      <Button key="forward" type="primary" onClick={() => this.handleNext(currentStep)}>
-        下一步
-      </Button>,
-    ];
-  };
-
-  render() {
-    const { updateModalVisible, handleUpdateModalVisible, values } = this.props;
-    const { currentStep, formVals } = this.state;
-
-    return (
-      <Modal
-        width={640}
-        bodyStyle={{ padding: '32px 40px 48px' }}
-        destroyOnClose
-        title="规则配置"
-        visible={updateModalVisible}
-        footer={this.renderFooter(currentStep)}
-        onCancel={() => handleUpdateModalVisible(false, values)}
-        afterClose={() => handleUpdateModalVisible()}
-      >
-        <Steps style={{ marginBottom: 28 }} size="small" current={currentStep}>
-          <Step title="基本信息" />
-          <Step title="配置规则属性" />
-          <Step title="设定调度周期" />
-        </Steps>
-        {this.renderContent(currentStep, formVals)}
-      </Modal>
-    );
-  }
-}
-
 /* eslint react/no-multi-comp:0 */
-@connect(({ rule, loading }) => ({
-  rule,
-  loading: loading.models.rule,
+@connect(({ contentModel, loading }) => ({
+  contentModel,
+  loading: loading.models.contentModel,
 }))
 @Form.create()
-class TableList extends PureComponent {
+class ContentManage extends PureComponent {
   state = {
     modalVisible: false,
-    updateModalVisible: false,
-    expandForm: false,
-    selectedRows: [],
     formValues: {},
-    stepFormValues: {},
+    current: {},
+    productList: []
   };
+
+  componentDidMount() {
+    const { dispatch } = this.props;
+    dispatch({
+      type: 'contentModel/getProductList',
+    });
+  }
 
   columns = [
     {
-      title: '规则名称',
+      title: '内容ID',
+      key: 'contentId',
+      dataIndex: 'contentId',
+    },
+    {
+      title: '产品ID',
+      key: 'productId',
+      dataIndex: 'productId',
+    },
+    {
+      title: '内容名称',
+      key: 'name',
       dataIndex: 'name',
     },
     {
-      title: '描述',
-      dataIndex: 'desc',
-    },
-    {
-      title: '服务调用次数',
-      dataIndex: 'callNo',
-      sorter: true,
-      render: val => `${val} 万`,
-      // mark to display a total number
-      needTotal: true,
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      filters: [
-        {
-          text: status[0],
-          value: 0,
-        },
-        {
-          text: status[1],
-          value: 1,
-        },
-        {
-          text: status[2],
-          value: 2,
-        },
-        {
-          text: status[3],
-          value: 3,
-        },
-      ],
-      render(val) {
-        return <Badge status={statusMap[val]} text={status[val]} />;
+      title: '内容类型',
+      key: 'type',
+      dataIndex: 'type',
+      render: (value) => {
+        if (value == 1) {
+          return '游戏';
+        } else if (value == 2) {
+          return '视频';
+        } else {
+          return '其他';
+        }
       },
     },
     {
-      title: '上次调度时间',
-      dataIndex: 'updatedAt',
-      sorter: true,
-      render: val => <span>{moment(val).format('YYYY-MM-DD HH:mm:ss')}</span>,
+      title: '内容海报',
+      key: 'poster',
+      dataIndex: 'poster',
+      render: (text, record) => (
+        <Zmage src={text} style={{ width: 60, height: 45 }}></Zmage >
+      ),
+    },
+    {
+      title: '内容图标',
+      key: 'icon',
+      dataIndex: 'icon',
+      render: (text, record) => (
+        <Zmage src={text} style={{ width: 60, height: 45 }}></Zmage >
+      ),
+    },
+    {
+      title: '内容截图',
+      key: 'screenShot',
+      dataIndex: 'screenShot',
+      render: (text, record) => (
+        <Zmage src={text} style={{ width: 60, height: 45 }}></Zmage >
+      ),
+    },
+    {
+      title: '内容链接',
+      key: 'link',
+      dataIndex: 'link',
+    },
+    {
+      title: '内容提示',
+      key: 'tip',
+      dataIndex: 'tip',
+    },
+    {
+      title: '内容配置',
+      key: 'options',
+      dataIndex: 'options'
     },
     {
       title: '操作',
       render: (text, record) => (
         <Fragment>
-          <a onClick={() => this.handleUpdateModalVisible(true, record)}>配置</a>
+          <a onClick={() => this.editAndDelete('edit', record)}>编辑</a>
           <Divider type="vertical" />
-          <a href="">订阅警报</a>
+          <a onClick={() => this.editAndDelete('del', record)}>删除</a>
         </Fragment>
       ),
+      fixed: 'right',
+      width: 120,
     },
   ];
 
-  componentDidMount() {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'rule/fetch',
-    });
-  }
-
-  handleStandardTableChange = (pagination, filtersArg, sorter) => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
-
-    const filters = Object.keys(filtersArg).reduce((obj, key) => {
-      const newObj = { ...obj };
-      newObj[key] = getValue(filtersArg[key]);
-      return newObj;
-    }, {});
-
-    const params = {
-      currentPage: pagination.current,
-      pageSize: pagination.pageSize,
-      ...formValues,
-      ...filters,
-    };
-    if (sorter.field) {
-      params.sorter = `${sorter.field}_${sorter.order}`;
+  editAndDelete = (key, currentItem) => {
+    if (key === 'edit') {
+      this.showEditModal(currentItem);
     }
+    if (key === 'del') {
+      Modal.confirm({
+        title: '删除内容',
+        content: `确定删除
+            ID为：${currentItem.contentId},
+            名称为：${currentItem.name},
+            的内容吗？`,
+        okText: '确认',
+        cancelText: '取消',
+        onOk: () => this.deleteItem(currentItem),
+      });
+    }
+  };
 
-    dispatch({
-      type: 'rule/fetch',
-      payload: params,
+  showEditModal = item => {
+    this.setState({
+      modalVisible: true,
+      current: item,
     });
+  };
+
+  deleteItem = item => {
+    const { dispatch } = this.props;
+    dispatch({
+      type: 'contentModel/delete',
+      payload: item,
+    });
+    dispatch({
+      type: 'contentModel/fetch',
+      payload: item,
+    })
   };
 
   handleFormReset = () => {
@@ -430,45 +333,8 @@ class TableList extends PureComponent {
       formValues: {},
     });
     dispatch({
-      type: 'rule/fetch',
-      payload: {},
-    });
-  };
-
-  toggleForm = () => {
-    const { expandForm } = this.state;
-    this.setState({
-      expandForm: !expandForm,
-    });
-  };
-
-  handleMenuClick = e => {
-    const { dispatch } = this.props;
-    const { selectedRows } = this.state;
-
-    if (selectedRows.length === 0) return;
-    switch (e.key) {
-      case 'remove':
-        dispatch({
-          type: 'rule/remove',
-          payload: {
-            key: selectedRows.map(row => row.key),
-          },
-          callback: () => {
-            this.setState({
-              selectedRows: [],
-            });
-          },
-        });
-        break;
-      default:
-        break;
-    }
-  };
-
-  handleSelectRows = rows => {
-    this.setState({
-      selectedRows: rows,
+      //重置 刷新表单
+      type: 'contentModel/fetch',
     });
   };
 
@@ -480,18 +346,9 @@ class TableList extends PureComponent {
     form.validateFields((err, fieldsValue) => {
       if (err) return;
 
-      const values = {
-        ...fieldsValue,
-        updatedAt: fieldsValue.updatedAt && fieldsValue.updatedAt.valueOf(),
-      };
-
-      this.setState({
-        formValues: values,
-      });
-
       dispatch({
-        type: 'rule/fetch',
-        payload: values,
+        type: 'contentModel/search',
+        payload: fieldsValue,
       });
     });
   };
@@ -499,148 +356,138 @@ class TableList extends PureComponent {
   handleModalVisible = flag => {
     this.setState({
       modalVisible: !!flag,
-    });
-  };
-
-  handleUpdateModalVisible = (flag, record) => {
-    this.setState({
-      updateModalVisible: !!flag,
-      stepFormValues: record || {},
-    });
-  };
-
-  handleAdd = fields => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'rule/add',
-      payload: {
-        desc: fields.desc,
+      current: {
+        productId: '',
+        contentId: '',
+        name: '',
+        type: 1,
+        link: '',
+        tip: '',
+        options: '',
       },
     });
+  };
 
-    message.success('添加成功');
+  handleSubmit = fieldsValue => {
+    const { dispatch } = this.props;
+    const { current } = this.state;
+    if (current.contentId) {
+      //编辑
+      dispatch({
+        type: 'contentModel/update',
+        payload: fieldsValue,
+      });
+    } else {
+      //新增
+      dispatch({
+        type: 'contentModel/add',
+        payload: fieldsValue,
+      });
+      dispatch({
+        type: 'contentModel/saveProductId',
+        payload: fieldsValue.productId,
+      });
+    }
+    dispatch({
+      type: 'contentModel/fetch',
+      payload: fieldsValue,
+    })
     this.handleModalVisible();
-  };
-
-  handleUpdate = fields => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
-    dispatch({
-      type: 'rule/update',
-      payload: {
-        query: formValues,
-        body: {
-          name: fields.name,
-          desc: fields.desc,
-          key: fields.key,
-        },
-      },
-    });
-
-    message.success('配置成功');
-    this.handleUpdateModalVisible();
   };
 
   renderForm() {
     const {
+      contentModel: { productList, productId },
       form: { getFieldDecorator },
+      dispatch,
     } = this.props;
+    const handleProductChange = (value) => {
+      dispatch({
+        type: 'contentModel/saveProductId',
+        payload: value,
+      });
+      dispatch({
+        type: 'contentModel/fetch',
+      });
+    };
     return (
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
-          <Col md={8} sm={24}>
-            <FormItem label="应用名称">
+          <Col md={6} sm={24}>
+            <FormItem label="所属产品" required>
+              <Select style={{ width: '100%' }} onChange={handleProductChange} value={productId}>
+                {productList.map(tmpObj => (<Option key={tmpObj.id} value={tmpObj.id}>{tmpObj.id + ' | ' + (tmpObj.name ? tmpObj.name : '')}</Option>))}
+              </Select>
+            </FormItem>
+          </Col>
+          <Col md={6} sm={24}>
+            <FormItem label="内容ID">
+              {getFieldDecorator('contentId')(<Input placeholder="请输入" />)}
+            </FormItem>
+          </Col>
+          <Col md={6} sm={24}>
+            <FormItem label="内容名称">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
-          <Col md={8} sm={24}>
-            <FormItem label="类型">
-              {getFieldDecorator('status')(
-                <Select placeholder="请选择" style={{ width: '100%' }}>
-                  <Option value="0">视频</Option>
-                  <Option value="1">游戏</Option>
-                </Select>
-              )}
-            </FormItem>
+          <Col md={6} sm={24}>
+            <span className={styles.submitButtons}>
+              <Button type="primary" htmlType="submit">
+                查询
+              </Button>
+              <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+                重置
+              </Button>
+            </span>
           </Col>
         </Row>
-        <div style={{ overflow: 'hidden' }}>
-          <div style={{ marginBottom: 24 }}>
-            <Button type="primary" htmlType="submit">
-              查询
-            </Button>
-            <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
-              重置
-            </Button>
-          </div>
-        </div>
       </Form>
     );
   }
 
   render() {
     const {
-      rule: { data },
+      contentModel: { data, productList },
       loading,
     } = this.props;
-    const listData = [];
-    for (let i = 0; i < 10; i++) {
-      listData.push({
-        id: 1,
-        name: '炉石传说',
-        icon: '/img/HearthStone/icon.jpg',
-        poster: '/img/HearthStone/HS-1.jpg',
-        screenShot: '/img/HearthStone/HS-2.jpg',
-        type: '游戏',
-        link: 'http://***.com',
-        tip: '这里是提示/详情',
-      });
-    }
-    const { selectedRows, modalVisible, updateModalVisible, stepFormValues } = this.state;
-    const menu = (
-      <Menu onClick={this.handleMenuClick} selectedKeys={[]}>
-        <Menu.Item key="remove">删除</Menu.Item>
-        <Menu.Item key="approval">批量审批</Menu.Item>
-      </Menu>
-    );
+    const { modalVisible, current } = this.state;
 
     const parentMethods = {
-      handleAdd: this.handleAdd,
       handleModalVisible: this.handleModalVisible,
+      handleSubmit: this.handleSubmit,
+      onTypeChange: (e) => {
+        this.setState({
+          current: {
+            ...current,
+            type: e.target.value,
+          },
+        })
+      },
+      onPosterChange: (obj) => {
+        this.setState({
+          current: {
+            ...current,
+            posterFile: obj.fileList,
+          },
+        })
+      },
+      onIconChange: (obj) => {
+        this.setState({
+          current: {
+            ...current,
+            iconFile: obj.fileList,
+          },
+        })
+      },
+      onScreenshotChange: (obj) => {
+        this.setState({
+          current: {
+            ...current,
+            screenShotFile: obj.fileList,
+          },
+        })
+      }
     };
-    const updateMethods = {
-      handleUpdateModalVisible: this.handleUpdateModalVisible,
-      handleUpdate: this.handleUpdate,
-    };
-    const spanStyle = {
-      position: 'absolute',
-      background: 'rgba(255,255,255,0.7)',
-      color: 'rgba(0, 0, 0, 0.45)',
-    };
-    const ImgContent = ({ imgName, imgUrl }) => (
-      <Fragment>
-        <span style={spanStyle}>{imgName}</span>
-        <img width={140} height={100} alt={imgName} src={imgUrl} />
-      </Fragment>
-    );
-    const ListContent = ({ data: { link, type, poster, screenShot } }) => (
-      <div className={styles.listContent}>
-        <div className={styles.listContentItem}>
-          <span>类型</span>
-          <p>{type}</p>
-        </div>
-        <div className={styles.listContentItem}>
-          <span>链接</span>
-          <p>{link}</p>
-        </div>
-        <div className={styles.listContentItem}>
-          <ImgContent imgName={'海报'} imgUrl={poster} />
-        </div>
-        <div className={styles.listContentItem}>
-          <ImgContent imgName={'内容截图'} imgUrl={screenShot} />
-        </div>
-      </div>
-    );
     return (
       <PageHeaderWrapper title="内容管理">
         <Card bordered={false}>
@@ -651,75 +498,17 @@ class TableList extends PureComponent {
                 新建
               </Button>
             </div>
-            {/* 列表 */}
-            <List
-              size="large"
-              pagination={{
-                onChange: page => {
-                  console.log(page);
-                },
-                pageSize: 5,
-              }}
-              dataSource={listData}
-              renderItem={item => (
-                <List.Item
-                  key={item.name}
-                  /* extra={
-                    <Fragment>
-                      <img width={140} height={100} alt="logo" src={item.screenShot} />
-                      <img width={140} height={100} alt="poster" src={item.poster} />
-                    </Fragment>
-                  } */
-                  actions={[
-                    <a
-                      onClick={e => {
-                        e.preventDefault();
-                        this.showEditModal(item);
-                      }}
-                    >
-                      查看
-                    </a>,
-                    <a
-                      onClick={e => {
-                        e.preventDefault();
-                        this.showEditModal(item);
-                      }}
-                    >
-                      编辑
-                    </a>,
-                    <a
-                      onClick={e => {
-                        e.preventDefault();
-                        this.showEditModal(item); /* todo:删除逻辑 */
-                      }}
-                    >
-                      删除
-                    </a>,
-                  ]}
-                >
-                  <List.Item.Meta
-                    avatar={<Avatar src={item.icon} />}
-                    title={item.name}
-                    description={item.tip}
-                  />
-                  <ListContent data={item} />
-                </List.Item>
-              )}
+            <Table
+              columns={this.columns}
+              dataSource={data}
+            // pagination={{defaultPageSize:5}}
             />
-            {/* 列表 */}
           </div>
         </Card>
-        <CreateForm {...parentMethods} modalVisible={modalVisible} />
-        {stepFormValues && Object.keys(stepFormValues).length ? (
-          <UpdateForm
-            {...updateMethods}
-            updateModalVisible={updateModalVisible}
-            values={stepFormValues}
-          />
-        ) : null}
+        <CreateForm {...parentMethods} modalVisible={modalVisible} current={current} productList={productList} />
       </PageHeaderWrapper>
     );
   }
 }
 
-export default TableList;
+export default ContentManage;

@@ -1,6 +1,7 @@
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'dva';
 import moment from 'moment';
+import Zmage from 'react-zmage';
 import {
   Row,
   Col,
@@ -21,12 +22,12 @@ import {
   Steps,
   Radio,
   Table,
-  Cascader,
+  Upload,
 } from 'antd';
-import StandardTable from '@/components/StandardTable';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 import styles from './ColumnManagement.less';
+import UploadPictures from '@/components/Self/UploadPictures';
 
 const FormItem = Form.Item;
 const { Step } = Steps;
@@ -39,84 +40,186 @@ const getValue = obj =>
     .join(',');
 
 const CreateForm = Form.create()(props => {
-  const { modalVisible, form, handleAdd, handleModalVisible } = props;
+  const { modalVisible, form, handleSubmit, handleModalVisible, onTypeChange, onPosterChange, current, productList } = props;
   const okHandle = () => {
     form.validateFields((err, fieldsValue) => {
       if (err) return;
       form.resetFields();
-      handleAdd(fieldsValue); //todo:后台逻辑
+
+      if(!fieldsValue.columnId){
+        fieldsValue.columnId = (new Date().getTime().toString()).slice(0,9);
+      }
+      handleSubmit({
+        ...fieldsValue,
+        posterFile: current.posterFile && current.posterFile.length > 0 ? current.posterFile[0].originFileObj : ''//入参需是js File对象 antd pro 包了一层 其中的originFileObj是所需对象
+      });
     });
   };
 
-  const options = [
-    {
-      value: '产品A',
-      label: '产品A',
-      children: [
-        {
-          value: '栏目A',
-          label: '栏目A',
-          children: [
-            {
-              value: '栏目B',
-              label: '栏目B',
-            },
-          ],
-        },
-      ],
-    },
-  ];
-
-  function onChange(value) {
-    console.log(value);
-  }
   return (
     <Modal
       destroyOnClose
-      title="新建栏目"
+      title={`${current.id ? '编辑' : '新建'}栏目`}
       visible={modalVisible}
       onOk={okHandle}
       onCancel={() => handleModalVisible()}
+      width={'80%'}
     >
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="栏目名称">
-        <Input placeholder="请输入" />
-      </FormItem>
-      {/* <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="栏目类型">
-        <Select defaultValue="栏目" style={{ width: 80 }}>
-          <Option value="栏目">栏目</Option>
-          <Option value="内容">内容</Option>
-        </Select>
-      </FormItem> */}
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="栏目连接">
-        <Input placeholder="请输入" />
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="所属父级">
-        <Cascader options={options} onChange={onChange} changeOnSelect />
-      </FormItem>
+      <Row>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="所属产品" required>
+            {form.getFieldDecorator('productId', {
+              rules: [{ required: true, message: '请选择所属产品!' }],
+              initialValue: current.productId ? current.productId : '',
+            })(
+              <Select style={{ width: '100%' }} disabled={current.productId ? true : false}>
+                {productList.map(tmpObj => (<Option key={tmpObj.id} value={tmpObj.id}>{tmpObj.id + ' | ' + (tmpObj.name ? tmpObj.name : '')}</Option>))}
+              </Select>
+            )
+            }
+          </FormItem>
+        </Col>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="栏目ID">
+            {form.getFieldDecorator('columnId', {
+              rules: [
+                {
+                  required: false,
+                  message: '栏目ID为长度不大于9位的数字！',
+                  max: 9,
+                  pattern: '^[0-9]*$',
+                },
+              ],
+              initialValue: current.columnId ? current.columnId + '' : '', //初始化值必须为string！！！
+            })(<Input disabled={current.columnId ? true : false} placeholder="请输入" />)}
+          </FormItem>
+        </Col>
+      </Row>
+      <Row>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="栏目名称">
+            {form.getFieldDecorator('name', {
+              rules: [{ required: false, message: '栏目名称长度不大于45！', max: 45 }],
+              initialValue: current.name,
+            })(<Input placeholder="请输入" />)}
+          </FormItem>
+        </Col>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="栏目类型">
+            {form.getFieldDecorator('type', {
+              initialValue: current.type,
+            })(
+              <RadioGroup onChange={onTypeChange} value={current.type}>
+                <Radio value={1}>游戏</Radio>
+                <Radio value={2}>视频</Radio>
+                <Radio value={0}>其他</Radio>
+              </RadioGroup>
+            )}
+
+          </FormItem>
+        </Col>
+      </Row>
+      <Row>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="栏目链接">
+            {form.getFieldDecorator('link', {
+              rules: [{ required: false, message: '栏目链接长度不大于255！', max: 255 }],
+              initialValue: current.name,
+            })(<Input placeholder="请输入" />)}
+          </FormItem>
+        </Col>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="栏目海报">
+            {form.getFieldDecorator('poster', {})(
+              <UploadPictures
+                fileList={current.poster ? [{ url: current.poster, uid: -1 }] : []}
+                onPictureChange={onPosterChange}
+                maxPicNum={1} />)}
+          </FormItem>
+        </Col>
+      </Row>
+      <Row>
+        <Col span={12}>
+          <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="栏目配置">
+            {form.getFieldDecorator('options', {
+              rules: [{ required: false, message: '栏目配置长度不大于255！', max: 255 }],
+              initialValue: current.options,
+            })(<TextArea rows={4} placeholder="请输入" />)}
+          </FormItem>
+        </Col>
+      </Row>
     </Modal>
   );
 });
 
 /* eslint react/no-multi-comp:0 */
-@connect(({ rule, loading }) => ({
-  rule,
-  loading: loading.models.rule,
+@connect(({ columnModel, loading }) => ({
+  columnModel,
+  loading: loading.models.columnModel,
 }))
 @Form.create()
-class ProductManage extends PureComponent {
+class ColumnManage extends PureComponent {
   state = {
     modalVisible: false,
-    updateModalVisible: false,
-    expandForm: false,
-    selectedRows: [],
     formValues: {},
-    stepFormValues: {},
+    current: {},
+    productList: []
   };
+
+  componentDidMount() {
+    const { dispatch } = this.props;
+    dispatch({
+      type: 'columnModel/getProductList',
+    });
+  }
 
   columns = [
     {
-      title: '产品名称',
+      title: '栏目ID',
+      key: 'columnId',
+      dataIndex: 'columnId',
+    },
+    {
+      title: '产品ID',
+      key: 'productId',
+      dataIndex: 'productId',
+    },
+    {
+      title: '栏目名称',
+      key: 'name',
       dataIndex: 'name',
+    },
+    {
+      title: '栏目类型',
+      key: 'type',
+      dataIndex: 'type',
+      render: (value) => {
+        if (value == 1) {
+          return '游戏';
+        } else if (value == 2) {
+          return '视频';
+        } else {
+          return '其他';
+        }
+      },
+    },
+    {
+      title: '栏目海报',
+      key: 'poster',
+      dataIndex: 'poster',
+      render: (text, record) => (
+        text ? <Zmage src={text} style={{ width: 60, height: 45 }}></Zmage > : ''
+      ),
+    },
+    {
+      title: '栏目链接',
+      key: 'link',
+      dataIndex: 'link',
+    },
+    {
+      title: '栏目配置',
+      key: 'options',
+      dataIndex: 'options'
     },
     {
       title: '操作',
@@ -127,53 +230,45 @@ class ProductManage extends PureComponent {
           <a onClick={() => this.editAndDelete('del', record)}>删除</a>
         </Fragment>
       ),
+      fixed: 'right',
+      width: 150,
     },
   ];
 
   editAndDelete = (key, currentItem) => {
     if (key === 'edit') {
-    } //this.showEditModal(currentItem);
-    else if (key === 'delete') {
+      this.showEditModal(currentItem);
+    }
+    if (key === 'del') {
       Modal.confirm({
-        title: '删除任务',
-        content: '确定删除该任务吗？',
+        title: '删除栏目',
+        content: `确定删除
+            ID为：${currentItem.columnId},
+            名称为：${currentItem.name},
+            的栏目吗？`,
         okText: '确认',
         cancelText: '取消',
-        onOk: () => this.deleteItem(currentItem.id),
+        onOk: () => this.deleteItem(currentItem),
       });
     }
   };
 
-  componentDidMount() {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'rule/fetch',
+  showEditModal = item => {
+    this.setState({
+      modalVisible: true,
+      current: item,
     });
-  }
+  };
 
-  handleStandardTableChange = (pagination, filtersArg, sorter) => {
+  deleteItem = item => {
     const { dispatch } = this.props;
-    const { formValues } = this.state;
-
-    const filters = Object.keys(filtersArg).reduce((obj, key) => {
-      const newObj = { ...obj };
-      newObj[key] = getValue(filtersArg[key]);
-      return newObj;
-    }, {});
-
-    const params = {
-      currentPage: pagination.current,
-      pageSize: pagination.pageSize,
-      ...formValues,
-      ...filters,
-    };
-    if (sorter.field) {
-      params.sorter = `${sorter.field}_${sorter.order}`;
-    }
-
     dispatch({
-      type: 'rule/fetch',
-      payload: params,
+      type: 'columnModel/delete',
+      payload: item,
+    });
+    dispatch({
+      type: 'columnModel/fetch',
+      payload: item,
     });
   };
 
@@ -184,45 +279,8 @@ class ProductManage extends PureComponent {
       formValues: {},
     });
     dispatch({
-      type: 'rule/fetch',
-      payload: {},
-    });
-  };
-
-  toggleForm = () => {
-    const { expandForm } = this.state;
-    this.setState({
-      expandForm: !expandForm,
-    });
-  };
-
-  handleMenuClick = e => {
-    const { dispatch } = this.props;
-    const { selectedRows } = this.state;
-
-    if (selectedRows.length === 0) return;
-    switch (e.key) {
-      case 'remove':
-        dispatch({
-          type: 'rule/remove',
-          payload: {
-            key: selectedRows.map(row => row.key),
-          },
-          callback: () => {
-            this.setState({
-              selectedRows: [],
-            });
-          },
-        });
-        break;
-      default:
-        break;
-    }
-  };
-
-  handleSelectRows = rows => {
-    this.setState({
-      selectedRows: rows,
+      //重置 刷新表单
+      type: 'columnModel/fetch',
     });
   };
 
@@ -234,18 +292,9 @@ class ProductManage extends PureComponent {
     form.validateFields((err, fieldsValue) => {
       if (err) return;
 
-      const values = {
-        ...fieldsValue,
-        updatedAt: fieldsValue.updatedAt && fieldsValue.updatedAt.valueOf(),
-      };
-
-      this.setState({
-        formValues: values,
-      });
-
       dispatch({
-        type: 'rule/fetch',
-        payload: values,
+        type: 'columnModel/search',
+        payload: fieldsValue,
       });
     });
   };
@@ -253,61 +302,83 @@ class ProductManage extends PureComponent {
   handleModalVisible = flag => {
     this.setState({
       modalVisible: !!flag,
-    });
-  };
-
-  handleUpdateModalVisible = (flag, record) => {
-    this.setState({
-      updateModalVisible: !!flag,
-      stepFormValues: record || {},
-    });
-  };
-
-  handleAdd = fields => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'rule/add',
-      payload: {
-        desc: fields.desc,
+      current: {
+        //modal初始化参数
+        productId: '',
+        columnId: '',
+        name: '',
+        type: 1,
+        link: '',
+        options: '',
       },
     });
+  };
 
-    message.success('添加成功');
+  handleSubmit = fieldsValue => {
+    const { dispatch } = this.props;
+    const { current } = this.state;
+    if (current.columnId) {
+      //编辑
+      dispatch({
+        type: 'columnModel/update',
+        payload: fieldsValue,
+      });
+    } else {
+      //新增
+      dispatch({
+        type: 'columnModel/add',
+        payload: fieldsValue,
+      });
+      dispatch({
+        type: 'columnModel/saveProductId',
+        payload: fieldsValue.productId,
+      });
+    }
+
+    dispatch({
+      type: 'columnModel/fetch',
+      payload: fieldsValue,
+    });
     this.handleModalVisible();
   };
 
-  handleUpdate = fields => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
-    dispatch({
-      type: 'rule/update',
-      payload: {
-        query: formValues,
-        body: {
-          name: fields.name,
-          desc: fields.desc,
-          key: fields.key,
-        },
-      },
-    });
-
-    message.success('配置成功');
-    this.handleUpdateModalVisible();
-  };
-
-  renderSimpleForm() {
+  renderForm() {
     const {
+      columnModel: { productList,productId },
       form: { getFieldDecorator },
+      dispatch,
     } = this.props;
+
+    const handleProductChange = (value) => {
+      dispatch({
+        type: 'columnModel/saveProductId',
+        payload: value,
+      });
+      dispatch({
+        type: 'columnModel/fetch',
+      });
+    };
     return (
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
-          <Col md={8} sm={24}>
+          <Col md={6} sm={24}>
+            <FormItem label="所属产品" required>
+              <Select style={{ width: '100%' }} onChange={handleProductChange} value={productId}>
+                {productList.map(tmpObj => (<Option key={tmpObj.id} value={tmpObj.id}>{tmpObj.id + ' | ' + (tmpObj.name ? tmpObj.name : '')}</Option>))}
+              </Select>
+            </FormItem>
+          </Col>
+          <Col md={6} sm={24}>
+            <FormItem label="栏目ID">
+              {getFieldDecorator('columnId')(<Input placeholder="请输入" />)}
+            </FormItem>
+          </Col>
+          <Col md={6} sm={24}>
             <FormItem label="栏目名称">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
-          <Col md={8} sm={24}>
+          <Col md={6} sm={24}>
             <span className={styles.submitButtons}>
               <Button type="primary" htmlType="submit">
                 查询
@@ -322,122 +393,33 @@ class ProductManage extends PureComponent {
     );
   }
 
-  renderForm() {
-    const { expandForm } = this.state;
-    return expandForm ? this.renderAdvancedForm() : this.renderSimpleForm();
-  }
-
   render() {
     const {
-      rule: { data },
+      columnModel: { data, productList },
       loading,
     } = this.props;
-    const { selectedRows, modalVisible, updateModalVisible, stepFormValues } = this.state;
+    const { modalVisible, current } = this.state;
 
     const parentMethods = {
-      handleAdd: this.handleAdd,
       handleModalVisible: this.handleModalVisible,
-    };
-    const updateMethods = {
-      handleUpdateModalVisible: this.handleUpdateModalVisible,
-      handleUpdate: this.handleUpdate,
-    };
-    //树
-    const columns = [
-      {
-        title: '栏目名称',
-        dataIndex: 'name',
-        key: 'name',
-      },
-      {
-        title: '栏目类型',
-        dataIndex: 'age',
-        key: 'age',
-        width: '12%',
-      },
-      {
-        title: '栏目链接',
-        dataIndex: 'address',
-        width: '30%',
-        key: 'address',
-      },
-      {
-        title: '操作',
-        key: 'action',
-        render: (text, record) => (
-          <span>
-            <a href="javascript:;">编辑 </a>
-            <Divider type="vertical" />
-            <a href="javascript:;">删除</a>
-          </span>
-        ),
-      },
-    ];
-
-    const treeData = [
-      {
-        key: 1,
-        name: '塔防游戏',
-        age: '栏目',
-        address: 'http://mockUrl.com',
-        children: [
-          {
-            key: 11,
-            name: '塔防热门游戏',
-            age: '子栏目',
-            address: 'http://mockUrl.com',
-            children: [
-              {
-                key: 111,
-                name: 'a游戏',
-                age: '内容',
-                address: 'http://mockUrl.com',
-              },
-              {
-                key: 112,
-                name: 'b游戏',
-                age: '内容',
-                address: 'http://mockUrl.com',
-              },
-            ],
+      handleSubmit: this.handleSubmit,
+      onTypeChange: (e) => {
+        this.setState({
+          current: {
+            ...current,
+            type: e.target.value,
           },
-          {
-            key: 12,
-            name: '塔防冷门游戏',
-            age: '子栏目',
-            address: 'http://mockUrl.com',
-            children: [
-              {
-                key: 121,
-                name: 'C游戏',
-                age: '内容',
-                address: 'http://mockUrl.com',
-              },
-              {
-                key: 122,
-                name: 'd游戏',
-                age: '内容',
-                address: 'http://mockUrl.com',
-              },
-            ],
+        })
+      },
+      onPosterChange: (obj) => {
+        this.setState({
+          current: {
+            ...current,
+            posterFile: obj.fileList,
           },
-        ],
-      },
-    ];
-
-    // rowSelection objects indicates the need for row selection
-    const rowSelection = {
-      onChange: (selectedRowKeys, selectedRows) => {
-        console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
-      },
-      onSelect: (record, selected, selectedRows) => {
-        console.log(record, selected, selectedRows);
-      },
-      onSelectAll: (selected, selectedRows, changeRows) => {
-        console.log(selected, selectedRows, changeRows);
-      },
+        })
+      }
     };
-
     return (
       <PageHeaderWrapper title="栏目管理">
         <Card bordered={false}>
@@ -448,21 +430,17 @@ class ProductManage extends PureComponent {
                 新建
               </Button>
             </div>
-            <Table columns={columns} rowSelection={rowSelection} dataSource={treeData} />
-            {/* <StandardTable
-              selectedRows={selectedRows}
-              loading={loading}
-              data={data}
+            <Table
               columns={this.columns}
-              onSelectRow={this.handleSelectRows}
-              onChange={this.handleStandardTableChange}
-            /> */}
+              dataSource={data}
+            // pagination={{defaultPageSize:5}}
+            />
           </div>
         </Card>
-        <CreateForm {...parentMethods} modalVisible={modalVisible} />
+        <CreateForm {...parentMethods} modalVisible={modalVisible} current={current} productList={productList} />
       </PageHeaderWrapper>
     );
   }
 }
 
-export default ProductManage;
+export default ColumnManage;

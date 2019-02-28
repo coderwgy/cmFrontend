@@ -1,13 +1,10 @@
 import {
-  queryRule,
-  removeRule,
-  addRule,
-  updateRule,
   getAllProducts,
   deleteProduct,
   addProduct,
   updateProduct,
-} from '@/services/productServices';
+} from '@/services/cmServices';
+import {message} from 'antd';
 
 export default {
   namespace: 'productModel',
@@ -27,6 +24,11 @@ export default {
 
     *delete({ payload, callback }, { call, put }) {
       const response = yield call(deleteProduct, payload);
+      if(response==undefined){
+        message.warn('删除失败，接口异常。')
+      }else{
+        message.success('删除成功');
+      }
       yield put({
         type: 'fetch',
         payload: response,
@@ -36,6 +38,11 @@ export default {
 
     *add({ payload, callback }, { call, put }) {
       const response = yield call(addProduct, payload);
+      if(response==undefined){
+        message.warn('新增失败，可能是产品ID已存在。')
+      }else{
+        message.success('新增成功');
+      }
       yield put({
         type: 'fetch',
         payload: response,
@@ -45,6 +52,11 @@ export default {
 
     *update({ payload, callback }, { call, put }) {
       const response = yield call(updateProduct, payload);
+      if(response==undefined){
+        message.warn('编辑失败，接口返回异常。')
+      }else{
+        message.success('编辑成功');
+      }
       yield put({
         type: 'fetch',
         payload: response,
@@ -71,38 +83,6 @@ export default {
         payload: filteredData,
       });
     },
-
-    /* *fetch({ payload }, { call, put }) {
-      const response = yield call(queryRule, payload);
-      yield put({
-        type: 'save',
-        payload: response,
-      });
-    }, */
-    /* *add({ payload, callback }, { call, put }) {
-      const response = yield call(addRule, payload);
-      yield put({
-        type: 'save',
-        payload: response,
-      });
-      if (callback) callback();
-    },
-    *remove({ payload, callback }, { call, put }) {
-      const response = yield call(removeRule, payload);
-      yield put({
-        type: 'save',
-        payload: response,
-      });
-      if (callback) callback();
-    },
-    *update({ payload, callback }, { call, put }) {
-      const response = yield call(updateRule, payload);
-      yield put({
-        type: 'save',
-        payload: response,
-      });
-      if (callback) callback();
-    }, */
   },
 
   reducers: {

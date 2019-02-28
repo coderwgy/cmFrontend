@@ -22,7 +22,6 @@ import {
   Radio,
   Table,
 } from 'antd';
-import StandardTable from '@/components/StandardTable';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 import styles from './ProductManagement.less';
@@ -61,8 +60,8 @@ const CreateForm = Form.create()(props => {
           rules: [
             {
               required: false,
-              message: '产品ID为长度不大于11位的数字！',
-              max: 11,
+              message: '产品ID为长度不大于9位的数字！',
+              max: 9,
               pattern: '^[0-9]*$',
             },
           ],
@@ -79,7 +78,7 @@ const CreateForm = Form.create()(props => {
         {form.getFieldDecorator('options', {
           rules: [{ required: false, message: '产品配置长度不大于255！', max: 255 }],
           initialValue: current.options,
-        })(<Input placeholder="请输入" />)}
+        })(<TextArea rows={4} placeholder="请输入" />)}
       </FormItem>
     </Modal>
   );
@@ -101,15 +100,18 @@ class ProductManage extends PureComponent {
   columns = [
     {
       title: '产品ID',
+      key:'id',
       dataIndex: 'id',
     },
     {
       title: '产品名称',
+      key:'name',
       dataIndex: 'name',
     },
     {
       title: '产品配置',
-      dataIndex: 'options',
+      key:'options',
+      dataIndex: 'options'
     },
     {
       title: '操作',
@@ -120,6 +122,8 @@ class ProductManage extends PureComponent {
           <a onClick={() => this.editAndDelete('del', record)}>删除</a>
         </Fragment>
       ),
+      fixed: 'right',
+      width: 150,
     },
   ];
 
@@ -157,6 +161,8 @@ class ProductManage extends PureComponent {
   };
 
   componentDidMount() {
+    console.log('product')
+
     const { dispatch } = this.props;
     dispatch({
       type: 'productModel/fetch',
@@ -206,16 +212,16 @@ class ProductManage extends PureComponent {
         type: 'productModel/update',
         payload: fieldsValue,
       });
-      message.success('编辑成功');
     } else {
       //新增
       dispatch({
         type: 'productModel/add',
         payload: fieldsValue,
       });
-      message.success('新增成功');
     }
-
+    dispatch({
+      type: 'productModel/fetch',
+    });
     this.handleModalVisible();
   };
 

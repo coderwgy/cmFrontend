@@ -109,6 +109,10 @@ export async function fakeAccountLogin(params) {
     body: params,
   });
 }
+//暂时登录方法 后台取全部用户名密码 前台判断下输入是否符合 返回
+export async function getAllUsers(params) {
+  return request('/cm/users');
+}
 
 export async function fakeRegister(params) {
   return request('/api/register', {

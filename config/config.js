@@ -55,8 +55,8 @@ if (process.env.APP_TYPE === 'site') {
 export default {
   // add for transfer to umi
   history: 'hash',
-  publicPath: '/', // '/cmBuild/',//"C:/TVProject/ant-design-pro/dist/",
-  base: '/', //'/cmBuild/',//'C:/TVProject/ant-design-pro/dist/',//部署非根路径 请求js css 的配置
+  publicPath: '/cm/', // '/cmBuild/',//"C:/TVProject/ant-design-pro/dist/",
+  base: '/cm/', //'/cmBuild/',//'C:/TVProject/ant-design-pro/dist/',//部署非根路径 请求js css 的配置
   exportStatic: {},
   plugins,
   define: {
@@ -78,7 +78,7 @@ export default {
   },
   proxy: {
     '/cm': {
-      target: 'http://localhost:8080/cm/v1/',
+      target: 'http://localhost:8080/cm/',//'http://112.124.122.227:8081/cm/'
       changeOrigin: true,
       pathRewrite: { '^/cm': '' },
     },
@@ -111,7 +111,7 @@ export default {
     },
   },
   manifest: {
-    basePath: '/', //'C:/TVProject/ant-design-pro/dist/',
+    basePath: '/cm/',
   },
 
   chainWebpack: webpackPlugin,

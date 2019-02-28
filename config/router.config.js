@@ -15,32 +15,32 @@ export default [
     path: '/',
     component: '../layouts/BasicLayout',
     Routes: ['src/pages/Authorized'],
-    // authority: ['admin', 'user'],
+    authority: ['admin', 'user','guest'],
     routes: [
       // dashboard
-      { path: '/', redirect: '/dashboard/analysis' },
-      {
-        path: '/dashboard',
-        name: '分析统计',
-        icon: 'dashboard',
-        routes: [
-          {
-            path: '/dashboard/analysis',
-            name: '总览',
-            component: './Dashboard/Analysis',
-          },
-          // {
-          //   path: '/dashboard/monitor',
-          //   name: 'monitor',
-          //   component: './Dashboard/Monitor',
-          // },
-          // {
-          //   path: '/dashboard/workplace',
-          //   name: 'workplace',
-          //   component: './Dashboard/Workplace',
-          // },
-        ],
-      },
+      { path: '/', redirect: '/layoutManagement/productManagement' },
+      // {
+      //   path: '/dashboard',
+      //   name: '分析统计',
+      //   icon: 'dashboard',
+      //   routes: [
+      //     {
+      //       path: '/dashboard/analysis',
+      //       name: '总览',
+      //       component: './Dashboard/Analysis',
+      //     },
+      //     // {
+      //     //   path: '/dashboard/monitor',
+      //     //   name: 'monitor',
+      //     //   component: './Dashboard/Monitor',
+      //     // },
+      //     // {
+      //     //   path: '/dashboard/workplace',
+      //     //   name: 'workplace',
+      //     //   component: './Dashboard/Workplace',
+      //     // },
+      //   ],
+      // },
       // forms
       // {
       //   path: '/form',
@@ -88,59 +88,60 @@ export default [
       //   ],
       // },
       // list
-      {
-        path: '/list',
-        icon: 'table',
-        name: 'list',
-        routes: [
-          {
-            path: '/list/table-list',
-            name: 'searchtable',
-            component: './List/TableList',
-          },
-          {
-            path: '/list/basic-list',
-            name: 'basiclist',
-            component: './List/BasicList',
-          },
-          {
-            path: '/list/card-list',
-            name: 'cardlist',
-            component: './List/CardList',
-          },
-          {
-            path: '/list/search',
-            name: 'searchlist',
-            component: './List/List',
-            routes: [
-              {
-                path: '/list/search',
-                redirect: '/list/search/articles',
-              },
-              {
-                path: '/list/search/articles',
-                name: 'articles',
-                component: './List/Articles',
-              },
-              {
-                path: '/list/search/projects',
-                name: 'projects',
-                component: './List/Projects',
-              },
-              {
-                path: '/list/search/applications',
-                name: 'applications',
-                component: './List/Applications',
-              },
-            ],
-          },
-        ],
-      },
+      // {
+      //   path: '/list',
+      //   icon: 'table',
+      //   name: 'list',
+      //   routes: [
+      //     {
+      //       path: '/list/table-list',
+      //       name: 'searchtable',
+      //       component: './List/TableList',
+      //     },
+      //     {
+      //       path: '/list/basic-list',
+      //       name: 'basiclist',
+      //       component: './List/BasicList',
+      //     },
+      //     {
+      //       path: '/list/card-list',
+      //       name: 'cardlist',
+      //       component: './List/CardList',
+      //     },
+      //     {
+      //       path: '/list/search',
+      //       name: 'searchlist',
+      //       component: './List/List',
+      //       routes: [
+      //         {
+      //           path: '/list/search',
+      //           redirect: '/list/search/articles',
+      //         },
+      //         {
+      //           path: '/list/search/articles',
+      //           name: 'articles',
+      //           component: './List/Articles',
+      //         },
+      //         {
+      //           path: '/list/search/projects',
+      //           name: 'projects',
+      //           component: './List/Projects',
+      //         },
+      //         {
+      //           path: '/list/search/applications',
+      //           name: 'applications',
+      //           component: './List/Applications',
+      //         },
+      //       ],
+      //     },
+      //   ],
+      // },
       // list
       {
         path: '/layoutManagement',
         icon: 'table',
         name: 'layoutManagement',
+        authority: ['admin', 'user','guest'],
         routes: [
           {
             path: '/layoutManagement/productManagement',
@@ -149,13 +150,32 @@ export default [
           },
           {
             path: '/layoutManagement/columnManagement',
-            name: '栏目管理',
+            name: 'columnManagement',
             component: './LayoutManagement/ColumnManagement',
           },
           {
             path: '/layoutManagement/contentManagement',
             name: 'contentManagement',
             component: './LayoutManagement/ContentManagement',
+          },
+          {
+            path: '/layoutManagement/columnContentRelation',
+            name: 'columnContentRelation',
+            component: './LayoutManagement/ColumnContentRelation',
+          },
+        ],
+      },
+      // FTP
+      {
+        path: '/config',
+        icon: 'profile',
+        name: 'config',
+        authority: ['admin', 'user','guest'],
+        routes: [
+          {
+            path: '/config/ftp',
+            name: 'FTP',
+            component: './Config/FTP',
           },
         ],
       },
