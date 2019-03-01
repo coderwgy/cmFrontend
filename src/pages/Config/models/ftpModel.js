@@ -30,7 +30,7 @@ import {
     },
   
     reducers: {
-      save(state, action) {console.log(action);
+      save(state, action) {
         return {
           ...state,
           data: action.payload,

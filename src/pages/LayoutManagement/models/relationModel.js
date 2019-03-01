@@ -9,7 +9,6 @@ import {
   updateRelation,
   getFtpConfig,
 } from '@/services/cmServices';
-import { stat } from 'fs';
 import {message} from 'antd';
 export default {
   namespace: 'relationModel',
@@ -78,7 +77,7 @@ export default {
         if(detailObj.type==0){
           detailObj.content.icon = detailObj.content.icon?urlPrefix+detailObj.content.icon:'';
           detailObj.content.poster = detailObj.content.poster?urlPrefix+detailObj.content.poster:'';
-          detailObj.content.screenShot = detailObj.content.poster?urlPrefix+detailObj.content.screenShot:'';
+          detailObj.content.screenShot = detailObj.content.screenShot?urlPrefix+detailObj.content.screenShot:'';
           detailObj.poster = detailObj.content.poster;//把poster字段放入detailObj 方便解析
           detailObj.content.position = detailObj.position;//position 放入列表中
           detailObj.content.relationType = detailObj.type;//子集是栏目还是内容的type 放入列表中

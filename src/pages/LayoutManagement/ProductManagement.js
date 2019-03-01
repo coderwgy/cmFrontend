@@ -21,6 +21,7 @@ import {
   Steps,
   Radio,
   Table,
+  Spin,
 } from 'antd';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
@@ -100,17 +101,17 @@ class ProductManage extends PureComponent {
   columns = [
     {
       title: '产品ID',
-      key:'id',
+      key: 'id',
       dataIndex: 'id',
     },
     {
       title: '产品名称',
-      key:'name',
+      key: 'name',
       dataIndex: 'name',
     },
     {
       title: '产品配置',
-      key:'options',
+      key: 'options',
       dataIndex: 'options'
     },
     {
@@ -161,8 +162,6 @@ class ProductManage extends PureComponent {
   };
 
   componentDidMount() {
-    console.log('product')
-
     const { dispatch } = this.props;
     dispatch({
       type: 'productModel/fetch',
@@ -297,11 +296,14 @@ class ProductManage extends PureComponent {
                 新建
               </Button>
             </div>
-            <Table
-              columns={this.columns}
-              dataSource={data}
+            <Spin spinning={loading}>
+              <Table
+                rowKey="id"
+                columns={this.columns}
+                dataSource={data}
               // pagination={{defaultPageSize:5}}
-            />
+              />
+            </Spin>
           </div>
         </Card>
         <CreateForm {...parentMethods} modalVisible={modalVisible} current={current} />

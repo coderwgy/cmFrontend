@@ -135,6 +135,5 @@ const transToFormData = (params) => {
   for(let key in params){
     data.append(key,params[key]);
   }
-  console.log(data instanceof FormData);
   return data;
 }

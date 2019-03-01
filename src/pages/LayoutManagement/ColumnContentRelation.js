@@ -23,6 +23,7 @@ import {
   Radio,
   Table,
   Upload,
+  Spin,
 } from 'antd';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
@@ -65,8 +66,8 @@ const CreateForm = Form.create()(props => {
       <Row>
         <Col span={12}>
           <FormItem label="所属产品" labelCol={{ span: 5 }} wrapperCol={{ span: 15 }}>
-            {form.getFieldDecorator('productId', { value: productId, initialValue: productId })(
-              <Select style={{ width: '100%' }} value={productId} disabled>
+            {form.getFieldDecorator('productId', { setFieldsValue: productId, initialValue: productId })(
+              <Select style={{ width: '100%' }} disabled>
                 {productList.map(tmpObj => (<Option key={tmpObj.id} value={tmpObj.id}>{tmpObj.id + ' | ' + (tmpObj.name ? tmpObj.name : '')}</Option>))}
               </Select>
             )}
@@ -74,8 +75,8 @@ const CreateForm = Form.create()(props => {
         </Col>
         <Col span={12}>
           <FormItem label="所属栏目" labelCol={{ span: 5 }} wrapperCol={{ span: 15 }}>
-            {form.getFieldDecorator('columnId', { value: columnId, initialValue: columnId })(
-              <Select style={{ width: '100%' }} value={columnId} disabled>
+            {form.getFieldDecorator('columnId', { setFieldsValue: columnId, initialValue: columnId })(
+              <Select style={{ width: '100%' }} disabled>
                 {columnList.map(tmpObj => (<Option key={tmpObj.columnId} value={tmpObj.columnId}>{tmpObj.columnId + ' | ' + (tmpObj.name ? tmpObj.name : '')}</Option>))}
               </Select>
             )}
@@ -87,11 +88,12 @@ const CreateForm = Form.create()(props => {
           <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label={`子${current.type == 1 ? '栏目' : '内容'}`}>
             {form.getFieldDecorator('contentId', {
               initialValue: current.contentId ? current.contentId : current.type == 1 ? columnId : selectContent[0] ? selectContent[0].contentId : '',
+              setFieldsValue: current.type == 1 ? columnId : (selectContent[0] ? selectContent[0].contentId : ''),
             })(current.type == 1 ?
-              <Select style={{ width: '100%' }} value={columnId} disabled={!!current.contentId}>
+              <Select style={{ width: '100%' }} disabled={!!current.contentId}>
                 {columnList.map(tmpObj => (<Option key={tmpObj.columnId} value={tmpObj.columnId}>{tmpObj.columnId + ' | ' + (tmpObj.name ? tmpObj.name : '')}</Option>))}
               </Select>
-              : <Select style={{ width: '100%' }} value={selectContent[0] ? selectContent[0].contentId : ''} disabled={!!current.contentId}>
+              : <Select style={{ width: '100%' }} disabled={!!current.contentId}>
                 {selectContent.map(tmpObj => (<Option key={tmpObj.contentId} value={tmpObj.contentId}>{tmpObj.contentId + ' | ' + (tmpObj.name ? tmpObj.name : '')}</Option>))}
               </Select>)}
           </FormItem>
@@ -100,8 +102,9 @@ const CreateForm = Form.create()(props => {
           <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="子集类型">
             {form.getFieldDecorator('type', {
               initialValue: current.type,
+              setFieldsValue: current.type
             })(
-              <RadioGroup value={current.type} disabled>
+              <RadioGroup disabled>
                 <Radio value={1}>栏目</Radio>
                 <Radio value={0}>内容</Radio>
               </RadioGroup>
@@ -137,7 +140,7 @@ const CreateForm = Form.create()(props => {
   loading: loading.models.relationModel,
 }))
 @Form.create()
-class ColumnManage extends PureComponent {
+class RelationManage extends PureComponent {
   state = {
     modalVisible: false,
     productId: {},
@@ -488,9 +491,10 @@ class ColumnManage extends PureComponent {
     };
     const gridStyle = {
       width: '25%',
+      height: '300px',
       textAlign: 'center',
     };
-    const imgStyle = { width: '100%', height: '100%' };
+    const imgStyle = { width: '100%', height:'100%' };
     return (
       <PageHeaderWrapper title="栏目内容关系管理">
         <Card bordered={false}>
@@ -504,21 +508,27 @@ class ColumnManage extends PureComponent {
                 添加子内容
               </Button>
             </div>
-            <Table
-              columns={this.columns}
-              dataSource={sonColumnList}
-              title={() => '子栏目列表'}
-            />
-            <Table
-              columns={this.contentColumns}
-              dataSource={sonContentList}
-              title={() => '子内容列表'}
-            />
-            <Card title="布局预览">
-              {detailList.map((obj) => (
-                <Card.Grid style={gridStyle}><Zmage src={obj.poster} alt={`位置：${obj.position}`} style={imgStyle}></Zmage ></Card.Grid>
-              ))}
-            </Card>
+            <Spin spinning={loading}>
+              <Table
+                rowKey="columnId"
+                columns={this.columns}
+                dataSource={sonColumnList}
+                title={() => '子栏目列表'}
+              />
+              <Table
+                rowKey="contentId"
+                columns={this.contentColumns}
+                dataSource={sonContentList}
+                title={() => '子内容列表'}
+              />
+              <Card title="布局预览">
+                {detailList.map((obj) => (
+                  <Card.Grid key={obj.type + ' - ' + obj.contentId} style={gridStyle}>
+                    <Zmage src={obj.poster} alt={`ID：${obj.contentId}，类型：${obj.type == 1 ? '子栏目' : '子内容'}，位置：${obj.position}`} style={imgStyle}></Zmage >
+                  </Card.Grid>
+                ))}
+              </Card>
+            </Spin>
           </div>
         </Card>
         <CreateForm {...parentMethods} modalVisible={modalVisible} current={current} columnList={columnList} productList={productList} productId={productId} columnId={columnId} selectContent={selectContent} />
@@ -527,4 +537,4 @@ class ColumnManage extends PureComponent {
   }
 }
 
-export default ColumnManage;
+export default RelationManage;

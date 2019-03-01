@@ -23,6 +23,7 @@ import {
   Radio,
   Table,
   Upload,
+  Spin,
 } from 'antd';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
@@ -46,8 +47,8 @@ const CreateForm = Form.create()(props => {
       if (err) return;
       form.resetFields();
 
-      if(!fieldsValue.contentId){
-        fieldsValue.contentId = (new Date().getTime().toString()).slice(0,9);//mysql int max num is 2147483647!!
+      if (!fieldsValue.contentId) {
+        fieldsValue.contentId = (new Date().getTime().toString()).slice(0, 9);//mysql int max num is 2147483647!!
       }
       handleSubmit({
         ...fieldsValue,
@@ -111,7 +112,7 @@ const CreateForm = Form.create()(props => {
             {form.getFieldDecorator('type', {
               initialValue: current.type,
             })(
-              <RadioGroup onChange={onTypeChange} value={current.type}>
+              <RadioGroup onChange={onTypeChange}>
                 <Radio value={1}>游戏</Radio>
                 <Radio value={2}>视频</Radio>
                 <Radio value={0}>其他</Radio>
@@ -319,11 +320,13 @@ class ContentManage extends PureComponent {
     dispatch({
       type: 'contentModel/delete',
       payload: item,
+      callback: () => {
+        dispatch({
+          type: 'contentModel/fetch',
+          payload: item,
+        })
+      }
     });
-    dispatch({
-      type: 'contentModel/fetch',
-      payload: item,
-    })
   };
 
   handleFormReset = () => {
@@ -376,22 +379,30 @@ class ContentManage extends PureComponent {
       dispatch({
         type: 'contentModel/update',
         payload: fieldsValue,
+        callback: () => {
+          dispatch({
+            type: 'contentModel/fetch',
+            payload: fieldsValue,
+          })
+        }
       });
     } else {
       //新增
       dispatch({
         type: 'contentModel/add',
         payload: fieldsValue,
-      });
-      dispatch({
-        type: 'contentModel/saveProductId',
-        payload: fieldsValue.productId,
+        callback: () => {
+          dispatch({
+            type: 'contentModel/fetch',
+            payload: fieldsValue,
+          })
+          dispatch({
+            type: 'contentModel/saveProductId',
+            payload: fieldsValue.productId,
+          });
+        }
       });
     }
-    dispatch({
-      type: 'contentModel/fetch',
-      payload: fieldsValue,
-    })
     this.handleModalVisible();
   };
 
@@ -498,11 +509,14 @@ class ContentManage extends PureComponent {
                 新建
               </Button>
             </div>
-            <Table
-              columns={this.columns}
-              dataSource={data}
-            // pagination={{defaultPageSize:5}}
-            />
+            <Spin spinning={loading}>
+              <Table
+                rowKey="contentId"
+                columns={this.columns}
+                dataSource={data}
+              // pagination={{defaultPageSize:5}}
+              />
+            </Spin>
           </div>
         </Card>
         <CreateForm {...parentMethods} modalVisible={modalVisible} current={current} productList={productList} />
